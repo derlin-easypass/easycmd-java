@@ -26,6 +26,33 @@ public class Account {
                 pattern.matcher(notes).matches();
     }
 
+    public boolean contains(String... patterns) {
+        for (String pattern : patterns) {
+            pattern = pattern.toLowerCase();
+            boolean match = name.toLowerCase().contains(pattern) ||
+                    pseudo.toLowerCase().contains(pattern) ||
+                    notes.toLowerCase().contains(pattern);
+            if(!match) return false;
+        }//end for
+        return true;
+    }
+
+    public String get(String field) {
+        field = field.toLowerCase();
+        if(field.equals("name")) return name;
+        if(field.equals("pseudo")) return pseudo;
+        if(field.startsWith("pass")) return password;
+        if(field.startsWith("note")) return notes;
+        return null;
+    }
+
+
+    public void show() {
+        System.out.println("   name>" + name);
+        System.out.println("  pseudo>" + pseudo);
+        System.out.println("  notes>" + notes);
+    }
+
     public boolean edit(Console console) throws IOException {
         Account newAccount = new Account();
         System.out.println();

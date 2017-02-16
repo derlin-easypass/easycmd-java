@@ -4,8 +4,6 @@ import jline.console.ConsoleReader;
 
 import java.io.IOException;
 
-import static sun.misc.Version.println;
-
 
 /**
  * date: 15.02.17
@@ -43,11 +41,7 @@ public class Console extends ConsoleReader {
 
 
     public boolean confirm(String text) throws IOException {
-        putString(text + "  [y|N]> ");
-        flush();
-        boolean ok = readCharacter() == 'y';
-        println();
-        return ok;
+        return readLine(text + " [y|N]").trim().equals("y");
     }
 
     public boolean clearScreen() throws IOException {
