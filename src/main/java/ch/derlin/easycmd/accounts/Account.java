@@ -1,6 +1,6 @@
 package ch.derlin.easycmd.accounts;
 
-import ch.derlin.easycmd.Console;
+import ch.derlin.easycmd.console.Console;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.IOException;
@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
  */
 public class Account {
     public String name = "", pseudo = "", password = "", notes = "";
+
     @SerializedName("creation date")
     public String creationDate;
     @SerializedName("modification date")
@@ -47,29 +48,28 @@ public class Account {
     }
 
 
-    public void show() {
-        System.out.println("   name>" + name);
-        System.out.println("  pseudo>" + pseudo);
-        System.out.println("  notes>" + notes);
+    public void show(Console console){
+        console.printWithPrompt("   name: ", name);
+        console.printWithPrompt("   pseudo: ", pseudo);
+        console.printWithPrompt("   notes: ", notes);
     }
 
     public boolean edit(Console console) throws IOException {
         Account newAccount = new Account();
         System.out.println();
-        newAccount.name = console.readWithDefault("   name>", name).trim();
-        newAccount.pseudo = console.readWithDefault("   pseudo>", pseudo).trim();
-        newAccount.password = console.readPassword("   password>", password).trim();
-        if (newAccount.password == null || newAccount.password.isEmpty())
-            newAccount.password = this.password;
-        newAccount.notes = console.readWithDefault("   note>", notes).trim();
+
+        newAccount.name = console.readWithDefault("   name> ", name).trim();
+        newAccount.pseudo = console.readWithDefault("   pseudo> ", pseudo).trim();
+        newAccount.password = console.readPassword("   password> ", password).trim();
+        newAccount.notes = console.readWithDefault("   note> ", notes).trim();
 
         console.println();
 
         if (this.equals(newAccount)) {
-            console.println("nothing to save.");
+            console.println("   nothing to save.");
             return false;
         }
-        if (console.confirm("Save changes ?")) {
+        if (console.confirm("   Save changes?")) {
             this.name = newAccount.name;
             this.pseudo = newAccount.pseudo;
             this.password = newAccount.password;

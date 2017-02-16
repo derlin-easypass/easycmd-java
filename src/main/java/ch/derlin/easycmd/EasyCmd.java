@@ -2,6 +2,7 @@ package ch.derlin.easycmd;
 
 import ch.derlin.easycmd.accounts.Account;
 import ch.derlin.easycmd.accounts.AccountsMap;
+import ch.derlin.easycmd.console.Console;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -43,17 +44,18 @@ public class EasyCmd {
 
     public EasyCmd(String[] args) throws Exception {
 
+
         if (args.length < 1) {
-            System.out.println("error: missing a filepath argument.");
+            System.out.println("missing a filepath argument.");
             System.exit(1);
         }
 
-        filepath = args[0];
         console = new Console();
+        filepath = args[0];
 
         if (!new File(filepath).exists()) {
-            System.out.printf("warn: the file '%s' does not exist%n", filepath);
-            if (console.confirm("continue ?")) {
+            console.warn("the file '%s' does not exist: " + filepath);
+            if (!console.confirm("continue ?")) {
                 System.exit(0);
             }
         }
@@ -72,15 +74,20 @@ public class EasyCmd {
 
         commandMap.put("exit", (c, a) -> System.exit(1));
 
-
         interpreter();
 
     }//end main
 
     public void interpreter() throws IOException {
         while (true) {
-            String line = console.readLine(">");
-            if (!line.isEmpty()) doCommand(line.split(" +"));
+            // history enabled only for commands
+            console.setHistoryEnabled(true);
+            String line = console.readLine();
+            console.setHistoryEnabled(false);
+            if (!line.isEmpty()) {
+                doCommand(line.split(" +"));
+                System.out.println();
+            }
         }
 
     }
@@ -107,12 +114,12 @@ public class EasyCmd {
 
     public void show(String cmd, String[] args) {
         Account a = findOne(args);
-        if (a != null) a.show();
+        if (a != null) a.show(console);
     }
 
     public void copy(String cmd, String[] args) {
         if (args.length < 1) {
-            System.out.println("incomplete command.");
+            console.error("incomplete command.");
             return;
         }
 
@@ -121,11 +128,13 @@ public class EasyCmd {
             String fieldname = args[0];
             String field = a.get(fieldname);
             if (field == null) {
-                System.out.println("invalid field " + args[0]);
-                return;
+                console.error("invalid field " + args[0]);
+            } else if (field.isEmpty()) {
+                console.warn("nothing to copy (empty field)");
+            } else {
+                copy(field);
+                console.info("%s for account '%s' copied to clipboard%n", fieldname, a.name);
             }
-            copy(field);
-            System.out.printf("%s for account '%s' copied to clipboard%n", fieldname, a.name);
         }
     }
 
@@ -138,9 +147,8 @@ public class EasyCmd {
                 save();
             }
         } catch (IOException e) {
-            System.out.println("error editing account.");
+            console.error("error editing account.");
         }
-
     }
 
     public void newAccount(String cmd, String[] args) {
@@ -152,7 +160,7 @@ public class EasyCmd {
                 save();
             }
         } catch (IOException e) {
-            System.out.println("error saving account.");
+            console.error("error saving account.");
         }
 
     }
@@ -160,16 +168,15 @@ public class EasyCmd {
     public void save() {
         try {
             accounts.save(accounts, filepath, pass);
-            System.out.println("saved.");
+            console.info("saved.");
         } catch (IOException e) {
-            System.out.println("error saving file.");
+            console.error("error saving file.");
         }
     }
 
     /* *****************************************************************
      * private utils
      * ****************************************************************/
-
 
     private void printResults() {
         int i = 0;
@@ -189,7 +196,7 @@ public class EasyCmd {
         // no argument: ok only if results has only one account
         if (args.length == 0) {
             if (results.size() > 1) {
-                System.out.println(" error: missing index");
+                console.error("missing index");
                 return null;
             } else {
                 return accounts.get(results.get(0));
@@ -202,7 +209,7 @@ public class EasyCmd {
             if (i >= 0 && i < results.size()) {
                 return accounts.get(results.get(i));
             } else {
-                System.out.println("error: argument not in range 0:" + results.size());
+                console.error("argument not in range 0:" + results.size());
                 return null;
             }
         } catch (NumberFormatException e) {
@@ -214,7 +221,7 @@ public class EasyCmd {
             results = res;
             return accounts.get(results.get(0));
         } else {
-            System.out.println("error: ambiguous account.");
+            console.error("ambiguous account.");
             return null;
         }
     }
