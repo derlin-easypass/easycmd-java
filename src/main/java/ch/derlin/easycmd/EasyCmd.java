@@ -3,6 +3,10 @@ package ch.derlin.easycmd;
 import ch.derlin.easycmd.accounts.Account;
 import ch.derlin.easycmd.accounts.AccountsMap;
 import ch.derlin.easycmd.console.Console;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -50,18 +54,65 @@ public class EasyCmd {
             System.exit(1);
         }
 
-        console = new Console();
-        filepath = args[0];
+        Options options = new Options();
 
-        if (!new File(filepath).exists()) {
-            console.warn("the file '%s' does not exist: " + filepath);
+        options.addOption("f", "file", true, "the session file");
+        options.addOption("p", "pass", true, "the password (unsafe: added to history)");
+        options.addOption("nocolor", "turn of the coloring in prompts");
+
+        // parse the command line arguments
+        CommandLine line = new DefaultParser().parse(options, args);
+        for (Option option : line.getOptions()) {
+            System.out.println(option);
+            System.out.printf("%s %s %s%n", option.getArgs(), option.getId(), option.getValue());
+        }//end for
+        // validate that block-size has been set
+        if (!line.hasOption("file")) {
+            // print the value of block-size
+            System.out.println("missing file argument (-f <file>)");
+            System.exit(0);
+        }
+
+
+        console = new Console(line.hasOption("nocolor"));
+        filepath = line.getOptionValue("file");
+        pass = line.getOptionValue("pass", "");
+
+        boolean fileExists = new File(filepath).exists();
+        if (fileExists) {
+            // decrypt file
+            try {
+                while (pass.isEmpty()) pass = console.readPassword("password> ", "");
+                accounts = AccountsMap.fromFile(filepath, pass);
+            } catch (SerialisationManager.WrongCredentialsException e) {
+                System.out.println("Error: wrong credentials");
+                System.exit(0);
+            }
+        } else {
+            // ensure the user wants to create a new file
+            console.warn("the file '%s' does not exist: ", filepath);
             if (!console.confirm("continue ?")) {
                 System.exit(0);
             }
+
+            // get a new password (confirm to avoid typing errors,
+            // since it is not recoverable)
+            if (pass.isEmpty()) {
+                String pass2 = "";
+                console.println("Choose a password. Ensure it is a strong one and don't forget it, it is not recoverable.");
+                while (true) {
+                    // @formatter:off
+                    do{ pass = console.readPassword("password> ", ""); } while (pass.isEmpty());
+                    do{ pass2 = console.readPassword("confirm> ", ""); } while (pass2.isEmpty()) ;
+                    // @formatter:on
+                    if (pass.equals(pass2)) break;
+                    console.error("passwords do  not match%n");
+                }
+            }
+            // creat empty
+            accounts = new AccountsMap();
         }
 
-        pass = "essai"; // console.readPassword("password>", "");
-        accounts = AccountsMap.fromFile(filepath, pass);
         results = accounts.keys();
 
         commandMap = new TreeMap<>();
@@ -98,6 +149,7 @@ public class EasyCmd {
         if (commandMap.containsKey(cmd)) {
             commandMap.get(cmd).apply(cmd, args);
         } else {
+            console.info("unrecognized command. Assuming find.");
             commandMap.get("find").apply("find", split);
         }
 
@@ -181,8 +233,9 @@ public class EasyCmd {
     private void printResults() {
         int i = 0;
         for (String name : results) {
-            System.out.printf(" [%d] %s%n", i++, name);
+            System.out.printf("  [%d] %s%n", i++, name);
         }//end for
+        System.out.printf(" %d results.%n", i);
     }
 
     private void copy(String s) {

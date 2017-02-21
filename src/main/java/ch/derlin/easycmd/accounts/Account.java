@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * Version: 0.1
  */
 public class Account {
-    public String name = "", pseudo = "", password = "", notes = "";
+    public String name = "", pseudo = "", email = "", password = "", notes = "";
 
     @SerializedName("creation date")
     public String creationDate;
@@ -24,6 +24,7 @@ public class Account {
     public boolean matches(Pattern pattern) {
         return pattern.matcher(name).matches() ||
                 pattern.matcher(pseudo).matches() ||
+                pattern.matcher(email).matches() ||
                 pattern.matcher(notes).matches();
     }
 
@@ -32,25 +33,28 @@ public class Account {
             pattern = pattern.toLowerCase();
             boolean match = name.toLowerCase().contains(pattern) ||
                     pseudo.toLowerCase().contains(pattern) ||
+                    email.toLowerCase().contains(pattern) ||
                     notes.toLowerCase().contains(pattern);
-            if(!match) return false;
+            if (!match) return false;
         }//end for
         return true;
     }
 
     public String get(String field) {
         field = field.toLowerCase();
-        if(field.equals("name")) return name;
-        if(field.equals("pseudo")) return pseudo;
-        if(field.startsWith("pass")) return password;
-        if(field.startsWith("note")) return notes;
+        if (field.equals("name")) return name;
+        if (field.equals("pseudo")) return pseudo;
+        if (field.equals("email")) return email;
+        if (field.startsWith("pass")) return password;
+        if (field.startsWith("note")) return notes;
         return null;
     }
 
 
-    public void show(Console console){
+    public void show(Console console) {
         console.printWithPrompt("   name: ", name);
         console.printWithPrompt("   pseudo: ", pseudo);
+        if (!email.isEmpty()) console.printWithPrompt("    email: ", email);
         console.printWithPrompt("   notes: ", notes);
     }
 
@@ -60,6 +64,7 @@ public class Account {
 
         newAccount.name = console.readWithDefault("   name> ", name).trim();
         newAccount.pseudo = console.readWithDefault("   pseudo> ", pseudo).trim();
+        if (!email.isEmpty()) newAccount.email = console.readWithDefault("   email> ", email).trim();
         newAccount.password = console.readPassword("   password> ", password).trim();
         newAccount.notes = console.readWithDefault("   note> ", notes).trim();
 
@@ -72,6 +77,7 @@ public class Account {
         if (console.confirm("   Save changes?")) {
             this.name = newAccount.name;
             this.pseudo = newAccount.pseudo;
+            this.email = newAccount.email;
             this.password = newAccount.password;
             this.notes = newAccount.notes;
             String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);

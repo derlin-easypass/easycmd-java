@@ -19,15 +19,21 @@ public class Console extends ConsoleReader {
     private static final String PASSWORD_REPLACE = "********************************************************************";
 
     private String prompt, promptColor;
+    private boolean disableColor;
 
     public Console() throws Exception {
-        this("> ", ANSIColors.YELLOW);
+        this("> ", ANSIColors.YELLOW, false);
     }
 
-    public Console(String prompt, String promptColor) throws Exception {
+    public Console(boolean noColor) throws Exception {
+        this("> ", ANSIColors.YELLOW, noColor);
+    }
+
+    public Console(String prompt, String promptColor, boolean noColor) throws Exception {
         super();
         this.prompt = prompt;
         this.promptColor = promptColor;
+        this.disableColor = noColor;
         super.setPrompt(wrap(prompt, promptColor));
     }
 
@@ -76,6 +82,11 @@ public class Console extends ConsoleReader {
         System.out.println(text);
     }
 
+
+    public String wrap(String text, String color) {
+        return disableColor ? text : String.format("%s%s%s", color, text, RESET);
+    }
+
     public static class ANSIColors {
         public static final String RED = "\033[00;31m";
         public static final String GREEN = "\033[00;32m";
@@ -93,8 +104,5 @@ public class Console extends ConsoleReader {
         public static final String WHITE = "\033[01;37m";
         public static final String RESET = "\033[39;49m";
 
-        public static String wrap(String text, String color) {
-            return String.format("%s%s%s", color, text, RESET);
-        }
     }
 }
