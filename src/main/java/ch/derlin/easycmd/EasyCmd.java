@@ -13,10 +13,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * date: 15.02.17
@@ -58,7 +56,9 @@ public class EasyCmd {
 
         options.addOption("f", "file", true, "the session file");
         options.addOption("p", "pass", true, "the password (unsafe: added to history)");
-        options.addOption("nocolor", "turn of the coloring in prompts");
+        options.addOption("nocolor", "turn off the coloring in prompts");
+        options.addOption("e", "encrypt", true, "encrypt the file given by -f and stop.");
+        options.addOption("d", "decrypt", true, "decrypt the file given by -f and stop.");
 
         // parse the command line arguments
         CommandLine line = new DefaultParser().parse(options, args);
@@ -80,14 +80,22 @@ public class EasyCmd {
 
         boolean fileExists = new File(filepath).exists();
         if (fileExists) {
-            // decrypt file
-            try {
-                while (pass.isEmpty()) pass = console.readPassword("password> ", "");
-                accounts = AccountsMap.fromFile(filepath, pass);
-            } catch (SerialisationManager.WrongCredentialsException e) {
-                System.out.println("Error: wrong credentials");
-                System.exit(0);
+            if (line.hasOption("encrypt")) {
+                // encrypt and quit
+                String encryptPath = line.getOptionValue("encrypt");
+                loadFromFile("encrypt", encryptPath);
+                System.exit(accounts == null ? 1 : 0);
+            } else {
+                // decrypt file
+                try {
+                    while (pass.isEmpty()) pass = console.readPassword("password> ", "");
+                    accounts = AccountsMap.fromEncryptedFile(filepath, pass);
+                } catch (SerialisationManager.WrongCredentialsException e) {
+                    System.out.println("Error: wrong credentials");
+                    System.exit(0);
+                }
             }
+
         } else {
             // ensure the user wants to create a new file
             console.warn("the file '%s' does not exist: ", filepath);
@@ -98,19 +106,17 @@ public class EasyCmd {
             // get a new password (confirm to avoid typing errors,
             // since it is not recoverable)
             if (pass.isEmpty()) {
-                String pass2 = "";
                 console.println("Choose a password. Ensure it is a strong one and don't forget it, it is not recoverable.");
-                while (true) {
-                    // @formatter:off
-                    do{ pass = console.readPassword("password> ", ""); } while (pass.isEmpty());
-                    do{ pass2 = console.readPassword("confirm> ", ""); } while (pass2.isEmpty()) ;
-                    // @formatter:on
-                    if (pass.equals(pass2)) break;
-                    console.error("passwords do  not match%n");
-                }
+                pass = getNewPass();
             }
             // creat empty
             accounts = new AccountsMap();
+        }
+
+        // decrypt and quit
+        if (line.hasOption("decrypt")) {
+            dumpToFile("dump", line.getOptionValues("decrypt"));
+            System.exit(0);
         }
 
         results = accounts.keys();
@@ -123,11 +129,22 @@ public class EasyCmd {
         commandMap.put("new", this::newAccount);
         commandMap.put("add", this::newAccount);
 
+        commandMap.put("load", this::loadFromFile);
+        commandMap.put("dump", this::dumpToFile);
+
         commandMap.put("exit", (c, a) -> System.exit(1));
+
+        // shortcuts
+        commandMap.put("pass", (c, s) -> {
+            ArrayList<String> list = new ArrayList<>(Arrays.asList(s));
+            list.add(0, c);
+            copy("copy", s);
+        });
 
         interpreter();
 
     }//end main
+
 
     public void interpreter() throws IOException {
         while (true) {
@@ -155,7 +172,7 @@ public class EasyCmd {
 
     }
 
-    public void findAll(String cmd, String[] args) {
+    public void findAll(String cmd, String... args) {
         if (args.length < 1) {
             results = accounts.keys();
         } else {
@@ -164,12 +181,12 @@ public class EasyCmd {
         printResults();
     }
 
-    public void show(String cmd, String[] args) {
+    public void show(String cmd, String... args) {
         Account a = findOne(args);
         if (a != null) a.show(console);
     }
 
-    public void copy(String cmd, String[] args) {
+    public void copy(String cmd, String... args) {
         if (args.length < 1) {
             console.error("incomplete command.");
             return;
@@ -190,7 +207,7 @@ public class EasyCmd {
         }
     }
 
-    public void edit(String cmd, String[] args) {
+    public void edit(String cmd, String... args) {
         Account a = findOne(args);
         if (a == null) return;
 
@@ -203,7 +220,7 @@ public class EasyCmd {
         }
     }
 
-    public void newAccount(String cmd, String[] args) {
+    public void newAccount(String cmd, String... args) {
         Account a = new Account();
 
         try {
@@ -217,9 +234,56 @@ public class EasyCmd {
 
     }
 
-    public void save() {
+
+    public void loadFromFile(String cmd, String... arg) {
+        if (arg.length == 0) {
+            console.error("missing file. Usage: %s <filepath:string>", cmd);
+            return;
+        }
+        String to = arg[0];
+        if (!canWriteTo(to)) return;
         try {
-            accounts.save(accounts, filepath, pass);
+            accounts = AccountsMap.fromFile(filepath);
+            filepath = to;
+            if (pass.isEmpty()) pass = getNewPass();
+            save();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.printf("Error loading json file '%s'%n", filepath);
+        }
+    }
+
+    public void dumpToFile(String cmd, String[] arg) {
+        try {
+            if (arg.length == 0) {
+                console.error("missing file. Usage: %s <filepath:string> [noIndent:boolean]", cmd);
+                return;
+            }
+
+            if (accounts.size() == 0) {
+                console.warn(" Nothing to dump; empty accounts list.");
+                return;
+            }
+
+            boolean indent = true;
+            if (arg.length > 1) {
+                indent = !Boolean.parseBoolean(arg[1]);
+            }
+
+            String to = arg[0];
+            if (!canWriteTo(to)) return;
+
+            AccountsMap.toFile(to, accounts, indent);
+            console.info("saved to '%s'", to);
+
+        } catch (IOException e) {
+            console.error(e.getMessage());
+        }
+    }
+
+    private void save() {
+        try {
+            accounts.save(filepath, pass);
             console.info("saved.");
         } catch (IOException e) {
             console.error("error saving file.");
@@ -229,6 +293,38 @@ public class EasyCmd {
     /* *****************************************************************
      * private utils
      * ****************************************************************/
+
+    private boolean canWriteTo(String filepath) {
+        File f = new File(filepath);
+        if (f.exists()) {
+            // if not a file, abort
+            if (!f.isFile()) {
+                console.error("'%s' is not a regular file.", filepath);
+                return false;
+            }
+
+            // else, ask for overwrite confirmation
+            try {
+                return console.confirm(String.format("'%s' already exists, overwrite ?", f.getAbsolutePath()));
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String getNewPass() throws IOException {
+        String pass1, pass2;
+        while (true) {
+            // @formatter:off
+                    do{ pass1 = console.readPassword("password> ", ""); } while (pass1.isEmpty());
+                    do{ pass2 = console.readPassword("confirm> ", ""); } while (pass2.isEmpty()) ;
+                    // @formatter:on
+            if (pass1.equals(pass2)) break;
+            console.error("passwords do  not match%n");
+        }
+        return pass1;
+    }
 
     private void printResults() {
         int i = 0;

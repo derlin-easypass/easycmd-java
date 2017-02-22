@@ -1,9 +1,11 @@
 package ch.derlin.easycmd.accounts;
 
 import ch.derlin.easycmd.SerialisationManager;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -34,12 +36,12 @@ public class AccountsMap extends TreeMap<String, Account> {
 
     // ------------------------------------- search
 
-    public List<String> keys(){
+    public List<String> keys() {
         return keySet().stream().collect(Collectors.toList());
     }
 
 
-    public List<String> find(String ... patterns) {
+    public List<String> find(String... patterns) {
         return values().stream()
                 .filter(a -> a.contains(patterns))
                 .map(a -> a.name)
@@ -54,8 +56,8 @@ public class AccountsMap extends TreeMap<String, Account> {
                 .collect(Collectors.toList());
     }
 
-    public void save(AccountsMap accounts, String filepath, String pass) throws IOException {
-         AccountsMap.toFile(filepath, pass, this);
+    public void save(String filepath, String pass) throws IOException {
+        AccountsMap.toEncryptedFile(filepath, pass, this);
     }
 
 
@@ -63,17 +65,30 @@ public class AccountsMap extends TreeMap<String, Account> {
      * static utils
      * ****************************************************************/
 
-    public static AccountsMap fromFile(String filepath, String password) throws IOException, SerialisationManager.WrongCredentialsException {
+
+    public static AccountsMap fromFile(String filepath) throws IOException, SerialisationManager.WrongCredentialsException {
+        //@formatter:off
+        List<Account> deserialized = new Gson().fromJson(new FileReader(filepath),
+                new TypeToken<List<Account>>() {}.getType());
+        //@formatter:on
+        return new AccountsMap(deserialized);
+    }
+
+    public static void toFile(String filepath, AccountsMap accounts, boolean indent) throws IOException {
+        try (OutputStream out = new FileOutputStream(new File(filepath))) {
+            Gson gson = indent ? new GsonBuilder().setPrettyPrinting().create() : new GsonBuilder().create();
+            out.write(gson.toJson(accounts.values()).getBytes());
+        }
+    }
+
+    public static AccountsMap fromEncryptedFile(String filepath, String password) throws IOException, SerialisationManager.WrongCredentialsException {
         List<Account> deserialized = (List<Account>) SerialisationManager.deserialize(CRYPTO_ALGORITHM, filepath, password,
                 new TypeToken<List<Account>>() {
                 }.getType());
         return new AccountsMap(deserialized);
-
     }
 
-
-    public static void toFile(String filepath, String password, AccountsMap accounts) throws IOException {
-
+    public static void toEncryptedFile(String filepath, String password, AccountsMap accounts) throws IOException {
         SerialisationManager.serialize(new ArrayList(accounts.values()), CRYPTO_ALGORITHM, filepath, password);
     }
 }
