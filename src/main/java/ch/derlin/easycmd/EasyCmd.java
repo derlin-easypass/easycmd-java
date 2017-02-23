@@ -25,7 +25,6 @@ public class EasyCmd {
 
     // algo for the deserialisation of data
     private static final String CRYPTO_ALGORITHM = "aes-128-cbc";
-
     private AccountsMap accounts;
     private List<String> results;
     private Console console;
@@ -42,6 +41,8 @@ public class EasyCmd {
 
     public static void main(String[] args) throws Exception {
         new EasyCmd(args);
+        //Console c = new Console();c.test();
+
     }//end main
 
     public EasyCmd(String[] args) throws Exception {
@@ -124,6 +125,7 @@ public class EasyCmd {
         commandMap = new TreeMap<>();
         commandMap.put("find", this::findAll);
         commandMap.put("show", this::show);
+        commandMap.put("showpass", this::showPass);
         commandMap.put("copy", this::copy);
         commandMap.put("edit", this::edit);
         commandMap.put("new", this::newAccount);
@@ -231,9 +233,19 @@ public class EasyCmd {
         } catch (IOException e) {
             console.error("error saving account.");
         }
-
     }
 
+    public void showPass(String cmd, String[] args) {
+        Account a = findOne(args);
+        if (a == null) return;
+
+        if (a.password.isEmpty()) {
+            console.warn("empty password.");
+        } else {
+            console.showPassword(a.password);
+            System.out.println();
+        }
+    }
 
     public void loadFromFile(String cmd, String... arg) {
         if (arg.length == 0) {
@@ -348,7 +360,7 @@ public class EasyCmd {
                 console.error("missing index");
                 return null;
             } else {
-                return accounts.get(results.get(0));
+                return accounts.isEmpty() ? null : accounts.get(results.get(0));
             }
         }
 
@@ -368,7 +380,7 @@ public class EasyCmd {
         List<String> res = accounts.find(args);
         if (res.size() == 1) {
             results = res;
-            return accounts.get(results.get(0));
+            return accounts.isEmpty() ? null : accounts.get(results.get(0));
         } else {
             console.error("ambiguous account.");
             return null;

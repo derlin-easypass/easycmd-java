@@ -87,6 +87,18 @@ public class Console extends ConsoleReader {
         return disableColor ? text : String.format("%s%s%s", color, text, RESET);
     }
 
+    public boolean showPassword(String pass) {
+        try {
+            resetPromptLine("   password> ", pass, pass.length());
+            readCharacter();
+            if (setCursorPosition(0) && killLine()) resetPromptLine("   password>", "", 0);
+
+        } catch ( IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static class ANSIColors {
         public static final String RED = "\033[00;31m";
         public static final String GREEN = "\033[00;32m";
