@@ -168,7 +168,8 @@ public class EasyCmd {
                         new ArgumentCompleter(new StringsCompleter("exit"), new NullCompleter()),
                         new ArgumentCompleter(new StringsCompleter("pass"), new NullCompleter()),
                         new ArgumentCompleter(new StringsCompleter("man"), new NullCompleter()),
-                        new ArgumentCompleter(new StringsCompleter("help"), new StringsCompleter(commandMap.keySet().toArray(new String[0])), new NullCompleter())
+                        new ArgumentCompleter(new StringsCompleter("help"),
+                                new StringsCompleter(commandMap.keySet().toArray(new String[0])), new NullCompleter())
                 )
         );
         for (Completer c : completors) {
@@ -262,9 +263,16 @@ public class EasyCmd {
     public void edit(String cmd, String... args) {
         Account a = findOne(args);
         if (a == null) return;
-
+        String oldName = a.name;
         try {
             if (a.edit(console)) {
+                if (!oldName.equals(a.name)) {
+                    if (accounts.containsKey(a.name)) {
+                        if (!console.confirm("this account name already exists. override ?")) return;
+                    }
+                    accounts.remove(oldName);
+                    accounts.put(a.name, a);
+                }
                 save();
             }
         } catch (IOException e) {
@@ -277,6 +285,9 @@ public class EasyCmd {
 
         try {
             if (a.edit(console)) {
+                if (accounts.containsKey(a.name)) {
+                    if (!console.confirm("this account name already exists. override ?")) return;
+                }
                 accounts.put(a.name, a);
                 save();
             }
