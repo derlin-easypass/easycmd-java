@@ -7,7 +7,6 @@ import ch.derlin.easycmd.doc.CmdDoc;
 import jline.console.completer.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
 import java.awt.*;
@@ -67,10 +66,7 @@ public class EasyCmd {
 
         // parse the command line arguments
         CommandLine line = new DefaultParser().parse(options, args);
-        for (Option option : line.getOptions()) {
-            System.out.println(option);
-            System.out.printf("%s %s %s%n", option.getArgs(), option.getId(), option.getValue());
-        }//end for
+
         // validate that block-size has been set
         if (!line.hasOption("file")) {
             // print the value of block-size
@@ -134,6 +130,7 @@ public class EasyCmd {
         commandMap.put("edit", this::edit);
         commandMap.put("new", this::newAccount);
         commandMap.put("add", this::newAccount);
+        commandMap.put("delete", this::deleteAccount);
 
         commandMap.put("load", this::loadFromFile);
         commandMap.put("dump", this::dumpToFile);
@@ -148,7 +145,7 @@ public class EasyCmd {
         commandMap.put("pass", (c, s) -> {
             ArrayList<String> list = new ArrayList<>(Arrays.asList(s));
             list.add(0, c);
-            copy("copy", (String[]) list.toArray());
+            copy("copy", (String[]) list.toArray(new String[0]));
         });
 
 
@@ -176,9 +173,7 @@ public class EasyCmd {
             console.addCompleter(c);
         }
 
-        InputStream stream = CmdDoc
-                .class.getResourceAsStream("/man.json");
-
+        InputStream stream = getClass().getResourceAsStream("/man.json");
         doc = new CmdDoc(stream);
 
         interpreter();
@@ -261,38 +256,72 @@ public class EasyCmd {
     }
 
     public void edit(String cmd, String... args) {
-        Account a = findOne(args);
-        if (a == null) return;
-        String oldName = a.name;
+        Account old = findOne(args);
+        if (old == null) return;
+
         try {
-            if (a.edit(console)) {
-                if (!oldName.equals(a.name)) {
-                    if (accounts.containsKey(a.name)) {
-                        if (!console.confirm("this account name already exists. override ?")) return;
-                    }
-                    accounts.remove(oldName);
-                    accounts.put(a.name, a);
-                }
-                save();
+            Account nw = console.readAccount(old);
+            if (old.equals(nw)) {
+                // no changes
+                console.println("   nothing to save.");
+                return;
             }
+
+            if (!old.name.equals(nw.name) && accounts.containsKeyLower(nw.name)) {
+                if (!console.confirm("   another account with this name already exists. override ?")) return;
+
+            } else {
+                // same name, ask for confirmation
+                if (!console.confirm("   save changes ?")) return;
+            }
+
+            accounts.remove(old.name);
+            old.overrideWith(nw);
+            accounts.put(old.name, old);
+            save();
+
         } catch (IOException e) {
             console.error("error editing account.");
         }
     }
 
+
     public void newAccount(String cmd, String... args) {
-        Account a = new Account();
 
         try {
-            if (a.edit(console)) {
-                if (accounts.containsKey(a.name)) {
-                    if (!console.confirm("this account name already exists. override ?")) return;
-                }
-                accounts.put(a.name, a);
+            Account empty = new Account();
+            empty.name = String.join(" ", args);
+            Account a = console.readAccount(empty);
+            if (a.name.isEmpty()) {
+                console.error("empty name");
+                return;
+            }
+
+            if (accounts.containsKeyLower(a.name)) {
+                if (!console.confirm("   another account with this name already exists. override ?")) return;
+            } else {
+                if (!console.confirm("   Save changes?")) return;
+            }
+
+            accounts.put(a.name, a);
+            save();
+
+        } catch (IOException e) {
+            console.error("error saving account.");
+        }
+    }
+
+    public void deleteAccount(String cmd, String[] args) {
+        Account a = findOne(args);
+        if (a == null) return;
+
+        try {
+            if (console.confirm(String.format(" delete account '%s' ?", a.name))) {
+                accounts.remove(a.name);
                 save();
             }
         } catch (IOException e) {
-            console.error("error saving account.");
+            console.error(e.getMessage());
         }
     }
 
@@ -376,7 +405,7 @@ public class EasyCmd {
                 System.out.println(descr.fullDescription());
             } else {
                 // the command does not exist -> print the closest command name available
-                System.out.printf("No such command %s. Did you mean %s ?%n", cmd, doc.betterMatch(cmd));
+                System.out.println(doc.help());
             }
         }
 

@@ -35,6 +35,11 @@
     "descr": "add an account."
   },
   {
+    "name": "delete",
+    "args": "<search | index>",
+    "descr": "delete an account."
+  },
+  {
     "name": "load",
     "args": "<file>",
     "descr": "load a json file from the filesystem and encrypt it."

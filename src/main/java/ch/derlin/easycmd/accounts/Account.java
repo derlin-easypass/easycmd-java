@@ -21,6 +21,11 @@ public class Account {
     @SerializedName("modification date")
     public String modificationDate;
 
+    @FunctionalInterface
+    public interface EditAccountChecker {
+        boolean apply(Account old, Account nw);
+    }
+
     public boolean matches(Pattern pattern) {
         return pattern.matcher(name).matches() ||
                 pattern.matcher(pseudo).matches() ||
@@ -58,7 +63,7 @@ public class Account {
         console.printWithPrompt("   notes: ", notes);
     }
 
-    public boolean edit(Console console) throws IOException {
+    public boolean edit(Console console, EditAccountChecker checker) throws IOException {
         Account newAccount = new Account();
         System.out.println();
 
@@ -70,22 +75,20 @@ public class Account {
 
         console.println();
 
-        if (this.equals(newAccount)) {
-            console.println("   nothing to save.");
-            return false;
-        }
-        if (console.confirm("   Save changes?")) {
-            this.name = newAccount.name;
-            this.pseudo = newAccount.pseudo;
-            this.email = newAccount.email;
-            this.password = newAccount.password;
-            this.notes = newAccount.notes;
-            String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
-            if (creationDate == null || creationDate.isEmpty()) creationDate = now;
-            this.modificationDate = now;
-        }
+        if (checker.apply(this, newAccount)) this.overrideWith(newAccount);
         console.println();
         return true;
+    }
+
+    public void overrideWith(Account other) {
+        this.name = other.name;
+        this.pseudo = other.pseudo;
+        this.email = other.email;
+        this.password = other.password;
+        this.notes = other.notes;
+        String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+        if (creationDate == null || creationDate.isEmpty()) creationDate = now;
+        this.modificationDate = now;
     }
 
     @Override
@@ -103,6 +106,7 @@ public class Account {
         return String.format("{name=%s, pseudo=%s, pass=%s, created=%s, modified=%s}",
                 name, pseudo, password, creationDate, modificationDate);
     }
+
 
 
 }//end class

@@ -54,9 +54,7 @@ public class SerialisationManager {
                            String password ) throws IOException {
 
         if( outStream == null ) {
-            throw new IllegalStateException( "The outputstream cannot be null " +
-                    "!" +
-                    "" );
+            throw new IllegalStateException( "The outputstream cannot be null!" );
         }
         try {
 

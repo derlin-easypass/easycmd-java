@@ -1,5 +1,6 @@
 package ch.derlin.easycmd.console;
 
+import ch.derlin.easycmd.accounts.Account;
 import jline.console.ConsoleReader;
 
 import java.io.IOException;
@@ -87,13 +88,28 @@ public class Console extends ConsoleReader {
         return disableColor ? text : String.format("%s%s%s", color, text, RESET);
     }
 
+
+    public Account readAccount(Account oldAccount) throws IOException {
+        if (oldAccount == null) oldAccount = new Account();
+        Account newAccount = new Account();
+        System.out.println();
+
+        newAccount.name = readWithDefault("   name> ", oldAccount.name).trim();
+        newAccount.pseudo = readWithDefault("   pseudo> ", oldAccount.pseudo).trim();
+        if (!oldAccount.email.isEmpty()) newAccount.email = readWithDefault("   email> ", oldAccount.email).trim();
+        newAccount.password = readPassword("   password> ", oldAccount.password).trim();
+        newAccount.notes = readWithDefault("   note> ", oldAccount.notes).trim();
+
+        return newAccount;
+    }
+
     public boolean showPassword(String pass) {
         try {
             resetPromptLine("   password> ", pass, pass.length());
             readCharacter();
             if (setCursorPosition(0) && killLine()) resetPromptLine("   password>", "", 0);
 
-        } catch ( IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return false;

@@ -40,6 +40,13 @@ public class AccountsMap extends TreeMap<String, Account> {
         return keySet().stream().collect(Collectors.toList());
     }
 
+    public boolean containsKeyLower(String s) {
+        final String sLower = s.toLowerCase().replace(" +", " ");
+        for (String k : keys()) {
+            if (k.toLowerCase().replace(" +", " ").equals(sLower)) return true;
+        }//end for
+        return false;
+    }
 
     public List<String> find(String... patterns) {
         return values().stream()
