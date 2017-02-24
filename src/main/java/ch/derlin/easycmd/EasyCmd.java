@@ -3,6 +3,7 @@ package ch.derlin.easycmd;
 import ch.derlin.easycmd.accounts.Account;
 import ch.derlin.easycmd.accounts.AccountsMap;
 import ch.derlin.easycmd.console.Console;
+import jline.console.completer.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
@@ -33,11 +34,11 @@ public class EasyCmd {
     private String pass;
 
     @FunctionalInterface
-    interface Command {
+    interface Commander {
         void apply(String command, String[] args);
     }
 
-    private Map<String, Command> commandMap;
+    private Map<String, Commander> commandMap;
 
     public static void main(String[] args) throws Exception {
         new EasyCmd(args);
@@ -140,8 +141,30 @@ public class EasyCmd {
         commandMap.put("pass", (c, s) -> {
             ArrayList<String> list = new ArrayList<>(Arrays.asList(s));
             list.add(0, c);
-            copy("copy", s);
+            copy("copy", (String[]) list.toArray());
         });
+
+
+        List<Completer> completors = new LinkedList<>();
+        StringsCompleter fieldsCompleter = new StringsCompleter("name", "pseudo", "notes", "email");
+        completors.add(
+                new AggregateCompleter(
+                        new ArgumentCompleter(new StringsCompleter("find"), fieldsCompleter, new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("show"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("showpass"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("copy"), fieldsCompleter),
+                        new ArgumentCompleter(new StringsCompleter("edit"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("new"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("add"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("load"), new FileNameCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("dump"), new FileNameCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("exit"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("pass"), new NullCompleter())
+                )
+        );
+        for (Completer c : completors) {
+            console.addCompleter(c);
+        }
 
         interpreter();
 
@@ -175,12 +198,18 @@ public class EasyCmd {
     }
 
     public void findAll(String cmd, String... args) {
+        List<String> newResults;
         if (args.length < 1) {
-            results = accounts.keys();
+            newResults = accounts.keys();
         } else {
-            results = accounts.find(args);
+            newResults = accounts.find(args);
         }
-        printResults();
+        if (newResults.size() > 0) {
+            results = newResults;
+            printResults();
+        } else {
+            console.warn("not match.");
+        }
     }
 
     public void show(String cmd, String... args) {
