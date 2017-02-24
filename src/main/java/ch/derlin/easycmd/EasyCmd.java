@@ -3,6 +3,7 @@ package ch.derlin.easycmd;
 import ch.derlin.easycmd.accounts.Account;
 import ch.derlin.easycmd.accounts.AccountsMap;
 import ch.derlin.easycmd.console.Console;
+import ch.derlin.easycmd.doc.CmdDoc;
 import jline.console.completer.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -14,6 +15,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.List;
 
@@ -39,6 +41,7 @@ public class EasyCmd {
     }
 
     private Map<String, Commander> commandMap;
+    private CmdDoc doc;
 
     public static void main(String[] args) throws Exception {
         new EasyCmd(args);
@@ -135,6 +138,10 @@ public class EasyCmd {
         commandMap.put("load", this::loadFromFile);
         commandMap.put("dump", this::dumpToFile);
 
+
+        commandMap.put("help", this::helpOrMan);
+        commandMap.put("man", this::helpOrMan);
+
         commandMap.put("exit", (c, a) -> System.exit(1));
 
         // shortcuts
@@ -159,12 +166,19 @@ public class EasyCmd {
                         new ArgumentCompleter(new StringsCompleter("load"), new FileNameCompleter()),
                         new ArgumentCompleter(new StringsCompleter("dump"), new FileNameCompleter()),
                         new ArgumentCompleter(new StringsCompleter("exit"), new NullCompleter()),
-                        new ArgumentCompleter(new StringsCompleter("pass"), new NullCompleter())
+                        new ArgumentCompleter(new StringsCompleter("pass"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("man"), new NullCompleter()),
+                        new ArgumentCompleter(new StringsCompleter("help"), new StringsCompleter(commandMap.keySet().toArray(new String[0])), new NullCompleter())
                 )
         );
         for (Completer c : completors) {
             console.addCompleter(c);
         }
+
+        InputStream stream = CmdDoc
+                .class.getResourceAsStream("/man.json");
+
+        doc = new CmdDoc(stream);
 
         interpreter();
 
@@ -191,8 +205,15 @@ public class EasyCmd {
         if (commandMap.containsKey(cmd)) {
             commandMap.get(cmd).apply(cmd, args);
         } else {
-            console.info("unrecognized command. Assuming find.");
-            commandMap.get("find").apply("find", split);
+            CmdDoc.CmdDescription bestMatch = doc.betterMatch(cmd, 2);
+            if (bestMatch != null) {
+                String bestCmd = bestMatch.getName();
+                System.out.printf("unrecognized command. Assuming '%s'%n", bestCmd);
+                commandMap.get(bestCmd).apply(bestCmd, args);
+            } else {
+                console.info("unrecognized command. Assuming find.");
+                commandMap.get("find").apply("find", split);
+            }
         }
 
     }
@@ -330,6 +351,25 @@ public class EasyCmd {
             console.error("error saving file.");
         }
     }
+
+    public void helpOrMan(String cmd, String[] args) {
+        // no arguments, print the list of available commands
+        if (args.length == 0) {
+            System.out.println(cmd.equals("man") ? doc.man() : doc.help());
+        } else {
+            // if a command name was specified, print its description
+            String param = args[0];
+            CmdDoc.CmdDescription descr = doc.get(param);
+
+            if (descr != null) {
+                System.out.println(descr.fullDescription());
+            } else {
+                // the command does not exist -> print the closest command name available
+                System.out.printf("No such command %s. Did you mean %s ?%n", cmd, doc.betterMatch(cmd));
+            }
+        }
+
+    }//end help
 
     /* *****************************************************************
      * private utils
