@@ -1,5 +1,5 @@
-![Travis badge](https://travis-ci.org/derlin-easypass/easycmd-java.svg?branch=master)
-![version](https://badge.fury.io/gh/derlin-easypass%2Feasycmd-java.svg)
+[![Travis](https://travis-ci.org/derlin-easypass/easycmd-java.svg?branch=master)](https://travis-ci.org/derlin-easypass/easycmd-java)
+[![release](http://github-release-version.herokuapp.com/github/derlin-easypass/easycmd-java/release.svg?style=flat)](https://github.com/derlin-easypass/easycmd-java/releases/latest)
 ![Made in Switzerland](https://img.shields.io/badge/Made%20with%20%E2%99%A5%20in-Switzerland-red.svg)
 
 # easycmd-java
