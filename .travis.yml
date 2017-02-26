@@ -1,0 +1,16 @@
+language: java
+jdk:
+- oraclejdk8
+sudo: false
+script: mvn package -B
+deploy:
+  provider: releases
+  api-key:
+    secure: w3MPcnPzsAplLJzQpLqzi84YKQFZykZm7Faqm+ca7reeBxfJYTlMqI1Oui3B0d48fBvBaf5Xs3p4zwhlw1irvm5TJknti++HpvvyoolrZq/qAICJBA5My1S2eL3QCwM8QqPZfr+g9XesClbHg8zQ/bB7eXgR5xe0at1RvTp1NIdLoKxwLo7WfmMaUsGVr8L4+8zxEDhd6IHJMpVYNwjPR/7iveHZLwaQLAY5NC4i9YLpMBMv/c5fTxBi75JiJrOjGEh4T75cA+4x/9EtAXs8qAgW1R9eP15xU7jI5fKL5GQ07JCGHoaJK83+GqnS4odNVj5Otz+HA79nw+0FTNj28yrRn4jROruUyxOHHHRpRV6BMB8CflG3x72xXeMGgAc9ojCgtBaN79f1on4tYPwMI4OV3e1gXNINLGRDew72JAdFSApCn7j8x57pMAc7Ls+nfB/SkVb5tuLPen25d7Z0jElDBPUn/t2LsANHX/s95uArOTgUpvRXm/jjYSiTXWVStqoiI81DbA2i9b8FJ8srggD9tGp3uE3+UfzGGune1g8DTbwUqznSQCnE12/9JS4s6TBw+wpHiJF3iOtpEnqwOcCAyG0BQwDAfaxKgmIwLDX/6MFezfIoUcTU/mlTu541nhUIDQtCimFCM3lmgkQxaQEx7wqKC9B5bAJnRknD2Ro=
+  file_glob: true
+  file: target/easycmd-java*full.jar
+  skip_cleanup: true
+  on:
+    all_branches: true
+    tags: true
+
