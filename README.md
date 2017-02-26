@@ -83,3 +83,16 @@ __files__:
 * `load <file>`: load a json file from the filesystem and encrypt it.
 * `dump <file>`: save the content of the given session into a json file (non encrypted).
 * `pass <search | index>`: copy the password of the given account to the clipboard. Same as copy pass.
+
+# Troubleshooting
+
+__copy does not work (HeadlessException)__
+
+In Java, accessing the system clipboard requires the AWT toolkit, which in turn needs a display. If you are in a headless environment, the clipboard won't be available. 
+
+To make it work in a unix environment through SSH: 
+
+ - ensure you have __xauth__ installed: `yum install xauth` or `apt install xauth`
+ - ensure you have the line `X11Forwarding: yes` uncommented in `/etc/ssh/sshd_config`
+ - use the -X option when connecting through ssh: `ssh -X ...`
+ 
