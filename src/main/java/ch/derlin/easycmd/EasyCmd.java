@@ -256,8 +256,9 @@ public class EasyCmd {
             } else if (field.isEmpty()) {
                 console.warn("nothing to copy (empty field)");
             } else {
-                copy(field);
-                console.info("%s for account '%s' copied to clipboard%n", fieldname, a.name);
+                if(copy(field)) {
+                    console.info("%s for account '%s' copied to clipboard%n", fieldname, a.name);
+                }
             }
         }
     }
@@ -462,10 +463,20 @@ public class EasyCmd {
         System.out.printf(" %d results.%n", i);
     }
 
-    private void copy(String s) {
+    private boolean copy(String s) {
         StringSelection selection = new StringSelection(s);
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        clipboard.setContents(selection, selection);
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(selection, selection);
+            return true;
+        }catch(HeadlessException e){
+            console.error("DISPLAY variable not set (HeadlessException).%n" +
+                    "  To use the copy feature through SSH, ensure that:%n" +
+                    "   - you have the xauth package installed,&n" +
+                    "   - the X11Forwarding option set to yes in sshd_config,%n" +
+                    "   - you ssh'd using the -X flag.");
+        }
+        return false;
     }
 
     private Account findOne(String... args) {
