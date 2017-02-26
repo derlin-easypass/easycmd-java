@@ -3,7 +3,7 @@
 ![Made in Switzerland](https://img.shields.io/badge/Made%20with%20%E2%99%A5%20in-Switzerland-red.svg)
 
 # easycmd-java
-Easypass command line interface written in Java8 (early 2017).
+Easypass command line interface written in Java 8 (early 2017).
 
 ## Introduction
 
