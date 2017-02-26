@@ -7,6 +7,7 @@ import ch.derlin.easycmd.doc.CmdDoc;
 import jline.console.completer.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
 import java.awt.*;
@@ -63,13 +64,19 @@ public class EasyCmd {
         options.addOption("nocolor", "turn off the coloring in prompts");
         options.addOption("e", "encrypt", true, "encrypt the file given by -f and stop.");
         options.addOption("d", "decrypt", true, "decrypt the file given by -f and stop.");
+        options.addOption("h", "help", false, "print this message.");
 
         // parse the command line arguments
         CommandLine line = new DefaultParser().parse(options, args);
 
-        // validate that block-size has been set
+        if(line.hasOption("help")){
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("easycmd", options);
+            System.exit(0);
+        }
+
+        // validate that a file is given
         if (!line.hasOption("file")) {
-            // print the value of block-size
             System.out.println("missing file argument (-f <file>)");
             System.exit(0);
         }
