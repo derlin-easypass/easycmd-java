@@ -96,3 +96,5 @@ To make it work in a unix environment through SSH:
  - ensure you have the line `X11Forwarding: yes` uncommented in `/etc/ssh/sshd_config`
  - use the -X option when connecting through ssh: `ssh -X ...`
  
+ 
+ NOTE: a sample program to decrypt encoded files in golang is available in the playground: https://play.golang.org/p/mWEL9TdfJV
