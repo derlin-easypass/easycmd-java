@@ -61,7 +61,7 @@ public class SerialisationManager {
             Gson gson = new GsonBuilder().create();
 
             outStream.write( OpenSSL.encrypt( algo, password.toCharArray(),
-                    gson.toJson( data ).getBytes( "UTF-8" ) ) );
+                    gson.toJson( data ).getBytes( "UTF-8" )) );
             outStream.write( "\r\n".getBytes() );
             outStream.write( System.getProperty( "line.separator" ).getBytes() );
             outStream.flush();

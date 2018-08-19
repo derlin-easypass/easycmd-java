@@ -51,7 +51,7 @@ public class Console extends ConsoleReader {
     public String readWithDefault(String prompt, String preload) throws IOException {
         //resetLine();
         //resetPromptLine(prompt, preload, preload.length());
-        return readLine(wrap(prompt, promptColor), null, preload);
+        return super.readLine(wrap(prompt, promptColor), null, preload);
     }
 
     public boolean confirm(String text) throws IOException {

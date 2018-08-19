@@ -180,7 +180,7 @@ public class EasyCmd {
             console.addCompleter(c);
         }
 
-        InputStream stream = getClass().getResourceAsStream("/man.json");
+        InputStream stream = getClass().getClassLoader().getResourceAsStream("man.json");
         doc = new CmdDoc(stream);
 
         interpreter();
