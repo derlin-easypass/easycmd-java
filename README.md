@@ -13,7 +13,7 @@ Easycmd is a simple program to keep your password in one or more encrypted json 
 
 the EasyPass family uses OpenSSL to encrypt and decrypt json files. The encryption phase corresponds roughly to the following openssl command:
   
-    openssl enc -aes-128-cbc -salt -in file.json -out file.json.enc 
+    openssl enc -aes-128-cbc -salt -base64 -in file.json -out file.json.enc 
 
 Using the `-salt` option means that the password always generates a different encryption key, which helps prevent dictionary attacks. 
 
@@ -96,3 +96,5 @@ To make it work in a unix environment through SSH:
  - ensure you have the line `X11Forwarding: yes` uncommented in `/etc/ssh/sshd_config`
  - use the -X option when connecting through ssh: `ssh -X ...`
  
+ 
+ NOTE: a sample program to decrypt encoded files in golang is available in the playground: https://play.golang.org/p/mWEL9TdfJV
